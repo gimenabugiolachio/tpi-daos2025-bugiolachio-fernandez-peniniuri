@@ -1,18 +1,19 @@
 package com.tpi.daos.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.tpi.daos.entity.Receta;
 import com.tpi.daos.repository.RecetaRepository;
-import org.springframework.transaction.annotation.Transactional;
-
 
 @Service
 @Transactional
 public class RecetaServiceImpl implements RecetaService {
-	private final RecetaRepository repo;
+    
+    private final RecetaRepository repo;
 
     public RecetaServiceImpl(RecetaRepository repo) {
         this.repo = repo;
@@ -20,20 +21,28 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public Receta crear(Receta receta) {
+        // Validación 1: Nombre único
         if (repo.existsByNombreIgnoreCase(receta.getNombre())) {
             throw new IllegalArgumentException("Ya existe una receta con ese nombre");
         }
+        
+        // Validación 2: Reglas de negocio de la imagen S04 (Positivos)
+        validarValoresPositivos(receta);
+
         return repo.save(receta);
     }
 
     @Override
-    public Receta actualizar(Long id, Receta receta) {
+    public Receta actualizar(Long id, Receta recetaNueva) {
         Receta existente = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Receta no encontrada"));
 
-        existente.setNombre(receta.getNombre());
-        existente.setPesoRacion(receta.getPesoRacion());
-        existente.setCaloriasPorRacion(receta.getCaloriasPorRacion());
+        // Validamos los nuevos valores antes de asignarlos
+        validarValoresPositivos(recetaNueva);
+
+        existente.setNombre(recetaNueva.getNombre());
+        existente.setPesoRacion(recetaNueva.getPesoRacion());
+        existente.setCaloriasPorRacion(recetaNueva.getCaloriasPorRacion());
 
         return repo.save(existente);
     }
@@ -57,5 +66,15 @@ public class RecetaServiceImpl implements RecetaService {
     @Transactional(readOnly = true)
     public List<Receta> listarTodas() {
         return repo.findAll();
+    }
+
+    // Método auxiliar para validar reglas de negocio
+    private void validarValoresPositivos(Receta receta) {
+        if (receta.getPesoRacion() == null || receta.getPesoRacion().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El peso de la ración debe ser un número positivo.");
+        }
+        if (receta.getCaloriasPorRacion() == null || receta.getCaloriasPorRacion() <= 0) {
+            throw new IllegalArgumentException("Las calorías por ración deben ser un entero positivo.");
+        }
     }
 }
