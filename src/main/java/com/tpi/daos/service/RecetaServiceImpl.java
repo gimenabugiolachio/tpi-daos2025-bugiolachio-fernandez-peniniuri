@@ -13,6 +13,7 @@ import com.tpi.daos.repository.RecetaRepository;
 @Transactional
 public class RecetaServiceImpl implements RecetaService {
 
+    
     private final RecetaRepository repo;
 
     public RecetaServiceImpl(RecetaRepository repo) {
@@ -28,6 +29,13 @@ public class RecetaServiceImpl implements RecetaService {
         }
 
         receta.setId(null);
+        // Validación 1: Nombre único
+        if (repo.existsByNombreIgnoreCase(receta.getNombre())) {
+            throw new IllegalArgumentException("Ya existe una receta con ese nombre");
+        }
+        
+        // Validación 2: Reglas de negocio de la imagen S04 (Positivos)
+        validarValoresPositivos(receta);
 
         return repo.save(receta);
     }
@@ -36,12 +44,16 @@ public class RecetaServiceImpl implements RecetaService {
     public Receta actualizar(Long id, Receta receta) {
         validarDatos(receta);
 
+    public Receta actualizar(Long id, Receta recetaNueva) {
         Receta existente = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Receta no encontrada"));
 
-        existente.setNombre(receta.getNombre());
-        existente.setPesoRacion(receta.getPesoRacion());
-        existente.setCaloriasPorRacion(receta.getCaloriasPorRacion());
+        // Validamos los nuevos valores antes de asignarlos
+        validarValoresPositivos(recetaNueva);
+
+        existente.setNombre(recetaNueva.getNombre());
+        existente.setPesoRacion(recetaNueva.getPesoRacion());
+        existente.setCaloriasPorRacion(recetaNueva.getCaloriasPorRacion());
 
         return repo.save(existente);
     }
@@ -78,6 +90,16 @@ public class RecetaServiceImpl implements RecetaService {
         if (receta.getCaloriasPorRacion() == null ||
                 receta.getCaloriasPorRacion() <= 0) {
             throw new IllegalArgumentException("Las calorías por ración deben ser un entero positivo");
+        }
+    }
+}
+    // Método auxiliar para validar reglas de negocio
+    private void validarValoresPositivos(Receta receta) {
+        if (receta.getPesoRacion() == null || receta.getPesoRacion().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El peso de la ración debe ser un número positivo.");
+        }
+        if (receta.getCaloriasPorRacion() == null || receta.getCaloriasPorRacion() <= 0) {
+            throw new IllegalArgumentException("Las calorías por ración deben ser un entero positivo.");
         }
     }
 }

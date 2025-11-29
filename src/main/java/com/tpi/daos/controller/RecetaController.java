@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// Importamos estáticamente los constructores de links
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
@@ -33,6 +34,7 @@ public class RecetaController {
 
 
         return model;
+        return toModel(receta);
     }
 
     // GET /recetas
@@ -49,6 +51,11 @@ public class RecetaController {
                 recetas,
                 linkTo(methodOn(RecetaController.class).listar()).withSelfRel()
         );
+                .map(this::toModel) // Usamos el método auxiliar para consistencia
+                .toList();
+
+        return CollectionModel.of(recetas,
+                linkTo(methodOn(RecetaController.class).listar()).withSelfRel());
     }
 
     // POST /recetas
@@ -61,6 +68,7 @@ public class RecetaController {
                 linkTo(methodOn(RecetaController.class).getById(creada.getId())).withSelfRel(),
                 linkTo(methodOn(RecetaController.class).listar()).withRel("todas-las-recetas")
         );
+        return toModel(creada);
     }
 
     // PUT /recetas/{id}
@@ -73,11 +81,23 @@ public class RecetaController {
                 linkTo(methodOn(RecetaController.class).getById(actualizada.getId())).withSelfRel(),
                 linkTo(methodOn(RecetaController.class).listar()).withRel("todas-las-recetas")
         );
+        return toModel(actualizada);
     }
 
     // DELETE /recetas/{id}
     @DeleteMapping("/{id}")
     public void eliminar(@PathVariable Long id) {
         service.eliminar(id);
+    }
+}
+
+    // Método auxiliar para armar la respuesta HATEOAS
+    private EntityModel<Receta> toModel(Receta receta) {
+        return EntityModel.of(receta,
+                linkTo(methodOn(RecetaController.class).getById(receta.getId())).withSelfRel(),
+                // Requisito S04: Link a las preparaciones (Raciones)
+                // Apuntamos al listar de RacionController con la relación "preparaciones"
+                linkTo(methodOn(RacionController.class).listar()).withRel("preparaciones")
+        );
     }
 }
