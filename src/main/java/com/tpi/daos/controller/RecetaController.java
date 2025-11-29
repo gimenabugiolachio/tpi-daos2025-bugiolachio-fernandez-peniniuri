@@ -25,6 +25,15 @@ public class RecetaController {
     @GetMapping("/{id}")
     public EntityModel<Receta> getById(@PathVariable Long id) {
         Receta receta = service.buscarPorId(id);
+
+        EntityModel<Receta> model = EntityModel.of(receta);
+
+        model.add(linkTo(methodOn(RecetaController.class).getById(id)).withSelfRel());
+
+        model.add(linkTo(methodOn(RecetaController.class).listar()).withRel("todas-las-recetas"));
+
+
+        return model;
         return toModel(receta);
     }
 
@@ -32,6 +41,16 @@ public class RecetaController {
     @GetMapping
     public CollectionModel<EntityModel<Receta>> listar() {
         List<EntityModel<Receta>> recetas = service.listarTodas().stream()
+                .map(r -> EntityModel.of(
+                        r,
+                        linkTo(methodOn(RecetaController.class).getById(r.getId())).withSelfRel()
+                ))
+                .toList();
+
+        return CollectionModel.of(
+                recetas,
+                linkTo(methodOn(RecetaController.class).listar()).withSelfRel()
+        );
                 .map(this::toModel) // Usamos el método auxiliar para consistencia
                 .toList();
 
@@ -43,6 +62,12 @@ public class RecetaController {
     @PostMapping
     public EntityModel<Receta> crear(@RequestBody Receta receta) {
         Receta creada = service.crear(receta);
+
+        return EntityModel.of(
+                creada,
+                linkTo(methodOn(RecetaController.class).getById(creada.getId())).withSelfRel(),
+                linkTo(methodOn(RecetaController.class).listar()).withRel("todas-las-recetas")
+        );
         return toModel(creada);
     }
 
@@ -50,6 +75,12 @@ public class RecetaController {
     @PutMapping("/{id}")
     public EntityModel<Receta> actualizar(@PathVariable Long id, @RequestBody Receta receta) {
         Receta actualizada = service.actualizar(id, receta);
+
+        return EntityModel.of(
+                actualizada,
+                linkTo(methodOn(RecetaController.class).getById(actualizada.getId())).withSelfRel(),
+                linkTo(methodOn(RecetaController.class).listar()).withRel("todas-las-recetas")
+        );
         return toModel(actualizada);
     }
 
@@ -58,6 +89,7 @@ public class RecetaController {
     public void eliminar(@PathVariable Long id) {
         service.eliminar(id);
     }
+}
 
     // Método auxiliar para armar la respuesta HATEOAS
     private EntityModel<Receta> toModel(Receta receta) {

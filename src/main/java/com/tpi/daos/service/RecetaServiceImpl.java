@@ -12,6 +12,7 @@ import com.tpi.daos.repository.RecetaRepository;
 @Service
 @Transactional
 public class RecetaServiceImpl implements RecetaService {
+
     
     private final RecetaRepository repo;
 
@@ -21,6 +22,13 @@ public class RecetaServiceImpl implements RecetaService {
 
     @Override
     public Receta crear(Receta receta) {
+        validarDatos(receta);
+
+        if (repo.existsByNombreIgnoreCase(receta.getNombre())) {
+            throw new IllegalArgumentException("Ya existe una receta con ese nombre");
+        }
+
+        receta.setId(null);
         // Validación 1: Nombre único
         if (repo.existsByNombreIgnoreCase(receta.getNombre())) {
             throw new IllegalArgumentException("Ya existe una receta con ese nombre");
@@ -33,6 +41,9 @@ public class RecetaServiceImpl implements RecetaService {
     }
 
     @Override
+    public Receta actualizar(Long id, Receta receta) {
+        validarDatos(receta);
+
     public Receta actualizar(Long id, Receta recetaNueva) {
         Receta existente = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Receta no encontrada"));
@@ -68,6 +79,20 @@ public class RecetaServiceImpl implements RecetaService {
         return repo.findAll();
     }
 
+    private void validarDatos(Receta receta) {
+        if (receta.getNombre() == null || receta.getNombre().isBlank()) {
+            throw new IllegalArgumentException("El nombre de la receta es obligatorio");
+        }
+        if (receta.getPesoRacion() == null ||
+                receta.getPesoRacion().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El peso de la ración debe ser un número positivo");
+        }
+        if (receta.getCaloriasPorRacion() == null ||
+                receta.getCaloriasPorRacion() <= 0) {
+            throw new IllegalArgumentException("Las calorías por ración deben ser un entero positivo");
+        }
+    }
+}
     // Método auxiliar para validar reglas de negocio
     private void validarValoresPositivos(Receta receta) {
         if (receta.getPesoRacion() == null || receta.getPesoRacion().compareTo(BigDecimal.ZERO) <= 0) {

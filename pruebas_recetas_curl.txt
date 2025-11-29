@@ -1,0 +1,36 @@
+# 1 - Listar todas las recetas
+curl --location 'http://localhost:8081/recetas'
+
+#2 - Traer por id
+curl --location 'http://localhost:8081/recetas/3'
+
+#3 - Crear Receta válida
+curl --location 'http://localhost:8081/recetas' \
+--header 'Content-Type: application/json' \
+--data '{
+  "nombre": "Pollo con papas",
+  "pesoRacion": 500.0,
+  "caloriasPorRacion": 820
+}
+'
+
+#4 - Peso Negativo
+curl --location 'http://localhost:8081/recetas' \
+--header 'Content-Type: application/json' \
+--data '{
+  "nombre": "Empanada de pollo",
+  "pesoRacion": -200,
+  "caloriasPorRacion": 120
+}
+'
+
+5# - Eliminar Receta
+curl --location --request DELETE 'http://localhost:8081/recetas/4' \
+--header 'Content-Type: application/json' \
+--data '{
+  "nombre": "Empanada de pollo",
+  "pesoRacion": -200,
+  "caloriasPorRacion": 120
+}
+'
+
